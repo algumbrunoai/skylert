@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Alertas de Clima</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        /* Container centralizado da tela de login */
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 320px;
+            text-align: center;
+        }
+        h2 { margin-bottom: 20px; color: #333; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        #mensagem {
+            margin-top: 15px;
+            font-size: 14px;
+            color: red;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ÁREA DE AUTENTICAÇÃO -->
+        <div id="auth-container" class="hidden">
+            <h2 id="titulo">Entrar no Skylert</h2>
+            <input type="email" id="email" placeholder="Digite seu e-mail" required>
+            <input type="password" id="senha" placeholder="Digite sua senha (mín. 6 dígitos)" required>
+            
+            <button class="btn-primary" id="btn-entrar">Entrar</button>
+            <button class="btn-secondary" id="btn-cadastrar">Criar Nova Conta</button>
+        </div>
+
+        <!-- Espaço para exibir avisos e erros ao usuário -->
+        <div id="mensagem">Carregando autenticação...</div>
+    </div>
+
+    <!-- FIREBASE SDK (Módulos de Inicialização e Autenticação) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        // Configuração do Firebase obtida no console do seu projeto
+        const firebaseConfig = {
+          apiKey: "AIzaSyDguSRkotz8ehCVjuYmwWZOrN36WcFYp9Q",
+          authDomain: "skylert-4d51a.firebaseapp.com",
+          projectId: "skylert-4d51a",
+          storageBucket: "skylert-4d51a.firebasestorage.app",
+          messagingSenderId: "572725592639",
+          appId: "1:572725592639:web:dcc5805c123f411197ae8a",
+          measurementId: "G-CHHLF8G01K"
+        };
+
+        // Inicializando os módulos
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Captura de elementos do HTML para manipulação via JS
+        const emailInput = document.getElementById('email');
+        const senhaInput = document.getElementById('senha');
+        const btnEntrar = document.getElementById('btn-entrar');
+        const btnCadastrar = document.getElementById('btn-cadastrar');
+        const mensagemDiv = document.getElementById('mensagem');
+        const authContainer = document.getElementById('auth-container');
+
+        // Função utilitária para centralizar mensagens na tela
+        function mostrarMensagem(texto, cor = 'red') {
+            mensagemDiv.textContent = texto;
+            mensagemDiv.style.color = cor;
+        }
+
+        // --- 1. PROCESSO DE CADASTRO ---
+        btnCadastrar.addEventListener('click', () => {
+            const email = emailInput.value.trim();
+            const senha = senhaInput.value;
+
+            if (!email || !senha) {
+                mostrarMensagem("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            createUserWithEmailAndPassword(auth, email, senha)
+                .then(() => {
+                    mostrarMensagem("Conta criada com sucesso!", "green");
+                })
+                .catch((error) => {
+                    mostrarMensagem("Erro ao criar conta: " + obterMensagemErroAmigavel(error.code));
+                });
+        });
+
+        // --- 2. PROCESSO DE LOGIN ---
+        btnEntrar.addEventListener('click', () => {
+            const email = emailInput.value.trim();
+            const senha = senhaInput.value;
+
+            if (!email || !senha) {
+                mostrarMensagem("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            signInWithEmailAndPassword(auth, email, senha)
+                .then(() => {
+                    mostrarMensagem("Login efetuado com sucesso!", "green");
+                })
+                .catch((error) => {
+                    mostrarMensagem("Erro ao entrar: " + obterMensagemErroAmigavel(error.code));
+                });
+        });
+
+        // --- 3. MONITORAMENTO DE ESTADO ---
+        // Essa função ouve em tempo real se há um usuário ativo. 
+        // Se houver, manda ele automaticamente para o dashboard sem precisar digitar login novamente.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = "dashboard.html";
+            } else {
+                // Se deslogado, revela o formulário e limpa o texto de carregamento inicial
+                authContainer.classList.remove('hidden');
+                mostrarMensagem("");
+                emailInput.value = "";
+                senhaInput.value = "";
+            }
+        });
+
+        // Função de mapeamento para traduzir erros técnicos do Firebase para o português
+        function obterMensagemErroAmigavel(codigoErro) {
+            switch (codigoErro) {
+                case "auth/invalid-email":
+                    return "E-mail com formato inválido.";
+                case "auth/weak-password":
+                    return "A senha precisa ter no mínimo 6 caracteres.";
+                case "auth/email-already-in-use":
+                    return "Este e-mail já está cadastrado.";
+                case "auth/invalid-credential":
+                    return "E-mail ou senha incorretos.";
+                default:
+                    return "Ocorreu um erro inesperado.";
+            }
+        }
+    </script>
+</body>
+</html>

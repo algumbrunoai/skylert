@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skylert - Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        /* Cabeçalho superior */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        /* Layout em Grade (Coluna esquerda maior, coluna direita menor) */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid-container { grid-template-columns: 1fr; }
+        }
+        /* Estilos dos Cards */
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        h3 { 
+            margin-top: 0; 
+            color: #333; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 10px; 
+        }
+        /* Campo de busca de cidades */
+        .busca-container { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+        .busca-container input { 
+            flex: 1; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+        }
+        .busca-container button { 
+            padding: 10px 20px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        /* Card do clima atual */
+        .clima-principal { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .temp-grande { 
+            font-size: 48px; 
+            font-weight: bold; 
+            margin: 10px 0; 
+        }
+        /* Grade para detalhes adicionais (vento, umidade...) */
+        .detalhes-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+        }
+        .detalhe-item { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 4px; 
+            text-align: center; 
+        }
+        /* Previsão diária */
+        .previsao-dia { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px 0; 
+            border-bottom: 1px solid #f1f1f1; 
+        }
+        /* Seção do Painel de Alertas */
+        .checkbox-group { margin: 15px 0; }
+        .checkbox-group label { display: block; margin: 8px 0; cursor: pointer; }
+        .btn-salvar { 
+            width: 100%; 
+            padding: 10px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .btn-sair { 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CABEÇALHO -->
+    <div class="header">
+        <h2>Skylert Dashboard</h2>
+        <div>
+            <span id="user-email" style="margin-right: 15px; font-weight: bold;">Carregando...</span>
+            <button class="btn-sair" id="btn-sair">Sair</button>
+        </div>
+    </div>
+
+    <!-- ÁREA DE BUSCA DE CIDADES -->
+    <div class="busca-container">
+        <input type="text" id="input-cidade" placeholder="Digite a cidade para consultar... Ex: Guarulhos">
+        <button id="btn-buscar">Ver Clima</button>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL (GRID) -->
+    <div class="grid-container">
+        
+        <!-- COLUNA ESQUERDA (DADOS METEOROLÓGICOS) -->
+        <div>
+            <!-- Clima Atual -->
+            <div class="card">
+                <h3>Clima Agora em <span id="cidade-nome">São Paulo</span></h3>
+                <div class="clima-principal">
+                    <div>
+                        <div class="temp-grande" id="temp-atual">--°C</div>
+                        <div id="condicao-atual" style="color: #666;">Carregando...</div>
+                    </div>
+                    <div style="text-align: right; color: #888;">
+                        Sensação térmica: <strong id="sensacao-atual">--°C</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalhes do Clima -->
+            <div class="card">
+                <h3>Detalhes Adicionais</h3>
+                <div class="detalhes-grid">
+                    <div class="detalhe-item">
+                        <div>Vento</div>
+                        <!-- Ajustado para exibir em km/h de forma consistente com o Python -->
+                        <strong id="vento-atual">-- km/h</strong> 
+                    </div>
+                    <div class="detalhe-item">
+                        <div>Umidade</div>
+                        <strong id="umidade-atual">--%</strong>
+                    </div>
+                    <div class="detalhe-item">
+                        <div>Índice UV</div>
+                        <strong id="uv-atual">--</strong>
+                    </div>
+                    <div class="detalhe-item">
+                        <div>Chance de Chuva</div>
+                        <strong id="chuva-atual">--%</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previsão dos Próximos Dias -->
+            <div class="card">
+                <h3>Previsão para os Próximos Dias</h3>
+                <div id="previsao-lista">
+                    <p style="color: #888;">Carregando previsão...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA DIREITA (PAINEL DE ALERTAS) -->
+        <div>
+            <div class="card" style="border: 2px solid #ffc107;">
+                <h3 style="color: #b58100;">Painel de Alertas de Clima</h3>
+                <p style="font-size: 14px; color: #555;">Deseja receber notificações por e-mail quando o clima ficar severo na sua região?</p>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="alert-chuva"> Alertas de Chuva Forte
+                    </label>
+                    <label>
+                        <input type="checkbox" id="alert-vento"> Alertas de Ventania Extrema
+                    </label>
+                    <label>
+                        <input type="checkbox" id="alert-temperatura"> Alertas de Temperatura Crítica
+                    </label>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">Cidade Monitorada para Alertas:</label>
+                    <input type="text" id="alert-cidade" placeholder="Ex: São Paulo" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <button class="btn-salvar" id="btn-salvar-alertas">Salvar Configurações</button>
+                <div id="msg-alertas" style="margin-top: 10px; font-size: 13px; text-align: center;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS DE COMPORTAMENTO (FIREBASE & INTEGRAÇÃO PYTHON) -->
+    <script type="module">
+        // Importando módulos do Firebase v10 através do CDN oficial
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Configurações do seu projeto Skylert
+        const firebaseConfig = {
+          apiKey: "AIzaSyDguSRkotz8ehCVjuYmwWZOrN36WcFYp9Q",
+          authDomain: "skylert-4d51a.firebaseapp.com",
+          projectId: "skylert-4d51a",
+          storageBucket: "skylert-4d51a.firebasestorage.app",
+          messagingSenderId: "572725592639",
+          appId: "1:572725592639:web:dcc5805c123f411197ae8a",
+          measurementId: "G-CHHLF8G01K"
+        };
+
+        // Inicializando os serviços do Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const userEmailSpan = document.getElementById('user-email');
+        const btnSair = document.getElementById('btn-sair');
+        let usuarioLogadoUid = null;
+
+        // Monitoramento de segurança: Se o usuário deslogar, é expulso da página imediatamente
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userEmailSpan.textContent = user.email;
+                usuarioLogadoUid = user.uid;
+                
+                // Carrega as preferências que o usuário já tinha salvo no banco de dados
+                carregarConfiguracoesAlerta(user.uid);
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // Botão Sair (Logout)
+        btnSair.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "login.html";
+            });
+        });
+
+        // =======================================================
+        // GRAVAÇÃO DAS CONFIGURAÇÕES DE ALERTAS (FIRESTORE)
+        // =======================================================
+        const btnSalvarAlertas = document.getElementById('btn-salvar-alertas');
+        const msgAlertas = document.getElementById('msg-alertas');
+
+        btnSalvarAlertas.addEventListener('click', async () => {
+            if (!usuarioLogadoUid) return;
+
+            // Monta o objeto de configuração baseado no estado das caixas de seleção
+            const config = {
+                receberChuva: document.getElementById('alert-chuva').checked,
+                receberVento: document.getElementById('alert-vento').checked,
+                receberTemperatura: document.getElementById('alert-temperatura').checked,
+                cidadeMonitorada: document.getElementById('alert-cidade').value,
+                emailUsuario: auth.currentUser.email
+            };
+
+            try {
+                // Grava as preferências no Firestore usando o UID único do usuário como ID do documento
+                await setDoc(doc(db, "alertas_config", usuarioLogadoUid), config);
+                msgAlertas.style.color = "green";
+                msgAlertas.textContent = "Preferências salvas com sucesso!";
+            } catch (error) {
+                msgAlertas.style.color = "red";
+                msgAlertas.textContent = "Erro ao salvar: " + error.message;
+            }
+        });
+
+        // Recupera e preenche as caixas de seleção com o que está guardado no Firestore
+        async function carregarConfiguracoesAlerta(uid) {
+            try {
+                const docRef = doc(db, "alertas_config", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const dados = docSnap.to_dict();
+                    document.getElementById('alert-chuva').checked = dados.receberChuva || false;
+                    document.getElementById('alert-vento').checked = dados.receberVento || false;
+                    document.getElementById('alert-temperatura').checked = dados.receberTemperatura || false;
+                    document.getElementById('alert-cidade').value = dados.cidadeMonitorada || "";
+                }
+            } catch (error) {
+                console.error("Erro ao recuperar preferências: ", error);
+            }
+        }
+
+        // =======================================================
+        // INTEGRAÇÃO COM A API DO BACK-END EM FLASK/PYTHON
+        // =======================================================
+        const inputCidade = document.getElementById('input-cidade');
+        const btnBuscar = document.getElementById('btn-buscar');
+
+        // Busca clima padrão de São Paulo ao entrar na tela
+        window.addEventListener('load', () => {
+            buscarClimaReal("Sao Paulo");
+        });
+
+        // Dispara busca ao clicar no botão "Ver Clima"
+        btnBuscar.addEventListener('click', () => {
+            const cidade = inputCidade.value.trim();
+            if (cidade) {
+                buscarClimaReal(cidade);
+            }
+        });
+
+        // Função responsável por chamar o servidor local Python e atualizar o HTML
+        async function buscarClimaReal(cidade) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/previsao?cidade=${encodeURIComponent(cidade)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Preenche as tags HTML com os dados limpos enviados pelo Flask
+                    document.getElementById('cidade-nome').textContent = data.cidade_nome;
+                    document.getElementById('temp-atual').textContent = `${data.temp_atual}°C`;
+                    document.getElementById('condicao-atual').textContent = data.condicao;
+                    document.getElementById('sensacao-atual').textContent = `${data.sensacao}°C`;
+                    
+                    // Modificado para km/h para bater com o processamento do Python
+                    document.getElementById('vento-atual').textContent = `${data.vento} km/h`; 
+                    document.getElementById('umidade-atual').textContent = `${data.umidade}%`;
+                    document.getElementById('uv-atual').textContent = data.uv;
+                    document.getElementById('chuva-atual').textContent = `${data.chuva}%`;
+
+                    // Renderiza a lista de previsão dos próximos dias dinamicamente
+                    const previsaoLista = document.getElementById('previsao-lista');
+                    previsaoLista.innerHTML = ""; 
+
+                    data.previsao_dias.forEach((dia, index) => {
+                        let labelDia = dia.data; 
+                        if (index === 0) labelDia = "Amanhã";
+                        
+                        const divDia = document.createElement('div');
+                        divDia.className = 'previsao-dia';
+                        divDia.innerHTML = `
+                            <span>${labelDia}</span>
+                            <strong>${dia.min}°C - ${dia.max}°C</strong>
+                        `;
+                        previsaoLista.appendChild(divDia);
+                    });
+
+                } else {
+                    alert("Erro ao consultar a API: " + data.erro);
+                }
+            } catch (error) {
+                console.error("Não foi possível conectar ao servidor Python: ", error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# Ambientes virtuais do Python
+venv/
+__pycache__/
+*.pyc
+
+# Arquivos de credenciais privadas (NUNCA enviar para o Git)
+.env
+firebase-chave.json
