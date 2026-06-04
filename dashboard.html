@@ -1228,14 +1228,14 @@
                 usuarioLogadoUid = user.uid;
                 carregarConfiguracoesAlerta(user.uid);
             } else {
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             }
         });
 
         // Botão Sair
         btnSair.addEventListener('click', () => {
             signOut(auth).then(() => {
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             });
         });
 
