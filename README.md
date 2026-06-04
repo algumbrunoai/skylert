@@ -134,7 +134,10 @@ Esse serviço verifica periodicamente as condições climáticas e envia alertas
 skylert/
 ├── alerta_climatico/
 │   └── main_worker.py
+│   └── notification_worker.py
+│   └── skylert_worker.py
 ├── app.py
+├── dashboard.html
 ├── index.html
 ├── requirements.txt
 ├── firebase-chave.json
