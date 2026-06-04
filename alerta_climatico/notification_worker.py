@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from email.mime.text import MIMEText
 
-from weather_service import (
+from skylert_meteo_service import (
     gerar_id_cidade
 )
 

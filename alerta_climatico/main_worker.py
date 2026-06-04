@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Adiciona a pasta raiz e a pasta 'servicos' ao caminho de busca do Python
+PASTA_RAIZ = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(PASTA_RAIZ)
+sys.path.append(os.path.join(PASTA_RAIZ, "servicos"))
+
 import time
 
 from skylert_worker import (

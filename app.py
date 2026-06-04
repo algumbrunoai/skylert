@@ -5,7 +5,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
- #Libera CORS APENAS para os seus ambientes seguros
+# Libera CORS APENAS para os seus ambientes seguros
 ORIGENS_PERMITIDAS = [
     "http://127.0.0.1:5500",  # Típico do Live Server do VSCode
     "http://localhost:5500",

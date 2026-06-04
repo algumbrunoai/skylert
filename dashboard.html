@@ -38,7 +38,8 @@
             --radius-lg: 20px;
         }
 
-        #lista-cidades {
+        #lista-cidades,
+        #lista-cidades-alertas {
             position: absolute;
             top: 100%;
             left: 0;
@@ -1171,7 +1172,10 @@
                     </div>
 
                     <div class="alert-field-label">Cidade monitorada para alertas</div>
-                    <input type="text" id="alert-cidade" placeholder="Ex: São Paulo">
+                    <div style="position: relative;">
+                        <input type="text" id="alert-cidade" placeholder="Ex: São Paulo" autocomplete="off">
+                        <div id="lista-cidades-alertas"></div>
+                    </div>
 
                     <button class="btn-salvar" id="btn-salvar-alertas">
                         <i class="ti ti-device-floppy"></i> Salvar Configurações
@@ -1284,6 +1288,10 @@
         const listaCidades = document.getElementById('lista-cidades');
         const btnBuscar = document.getElementById('btn-buscar');
 
+        // Mapeamento dos novos elementos do painel de alertas
+        const alertCidade = document.getElementById('alert-cidade');
+        const listaCidadesAlertas = document.getElementById('lista-cidades-alertas');
+
         // =======================================================
         // AUTOCOMPLETE DE CIDADES
         // =======================================================
@@ -1361,6 +1369,64 @@
                 listaCidades.style.display = "none";
             }
         });
+
+        // AUTOCOMPLETE DOS ALERTAS
+        alertCidade.addEventListener('input', async () => {
+            const termo = alertCidade.value.trim();
+
+            if (termo.length < 2) {
+                listaCidadesAlertas.innerHTML = "";
+                listaCidadesAlertas.style.display = "none";
+                return;
+            }
+
+            try {
+                // Caso queira usar a variável dinâmica de URL que fizemos, substitua o IP por ${API_BASE_URL}
+                const response = await fetch(
+                    `http://127.0.0.1:5000/api/cidades?q=${encodeURIComponent(termo)}`
+                );
+
+                const cidades = await response.json();
+                listaCidadesAlertas.innerHTML = "";
+
+                if (cidades.length === 0) {
+                    listaCidadesAlertas.style.display = "none";
+                    return;
+                }
+
+                cidades.forEach(cidade => {
+                    const item = document.createElement('div');
+                    item.className = 'item-cidade';
+                    item.textContent = cidade.nome;
+
+                    item.addEventListener('click', () => {
+                        alertCidade.value = cidade.nome;
+                        listaCidadesAlertas.innerHTML = "";
+                        listaCidadesAlertas.style.display = "none";
+                    });
+
+                    listaCidadesAlertas.appendChild(item);
+                });
+
+                listaCidadesAlertas.style.display = "block";
+
+            } catch (error) {
+                console.error("Erro no autocomplete de alertas:", error);
+                listaCidadesAlertas.style.display = "none";
+            }
+        });
+
+        // Fecha a lista de alertas ao clicar fora dela
+        document.addEventListener('click', (e) => {
+            if (
+                !listaCidadesAlertas.contains(e.target) &&
+                e.target !== alertCidade
+            ) {
+                listaCidadesAlertas.innerHTML = "";
+                listaCidadesAlertas.style.display = "none";
+            }
+        });
+
         // Busca clima padrão de São Paulo ao entrar na tela
         window.addEventListener('load', () => {
             buscarClimaReal("Sao Paulo");

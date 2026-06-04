@@ -2,7 +2,7 @@ from firebase_config import db
 
 from datetime import datetime
 
-from weather_service import (
+from skylert_meteo_service import (
     obter_clima,
     gerar_id_cidade
 )
@@ -56,7 +56,11 @@ def atualizar_cache_climatico():
                 f"{cidade}"
             )
 
-            clima = obter_clima(cidade)
+            # Limpa o nome removendo o hífen e o estado (ex: "Boa Vista - Roraima" -> "Boa Vista")
+            # Isso garante que a API de Geolocalização encontre a cidade com sucesso!
+            cidade_busca = cidade.split(" - ")[0].strip() if " - " in cidade else cidade
+
+            clima = obter_clima(cidade_busca)
 
             if not clima:
 
@@ -111,8 +115,7 @@ def atualizar_cache_climatico():
             })
 
             print(
-                f"[OK] Cache atualizado "
-                f"{cidade}"
+                f"[OK] Cache atualizado {cidade}"
             )
 
         except Exception as e:
