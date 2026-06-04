@@ -11,7 +11,7 @@ ORIGENS_PERMITIDAS = [
     "http://localhost:5500",
     "http://127.0.0.1:5000",
     "http://localhost:5000",
-    "https://seusite.com"     # Quando for publicar, coloque seu domínio real aqui
+    "https://skylert.vercel.app"     # Quando for publicar, coloque seu domínio real aqui
 ]
 
 # Libera CORS para o frontend
