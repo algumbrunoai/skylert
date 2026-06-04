@@ -780,6 +780,10 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    // Configuração dinâmica da URL da API (Local vs Render)
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_BASE_URL = isLocalhost ? 'http://127.0.0.1:5000' : 'https://skylert-api.onrender.com'; // <-- Substitua pela sua URL do Render
+
     // Captura de elementos do HTML para manipulação via JS
     const emailInput = document.getElementById('email');
     const senhaInput = document.getElementById('senha');
@@ -900,7 +904,7 @@
         try {
 
             const response = await fetch(
-                "http://127.0.0.1:5000/api/previsao?cidade=Sao%20Paulo"
+                `${API_BASE_URL}/api/previsao?cidade=Sao%20Paulo`
             );
 
             const data = await response.json();

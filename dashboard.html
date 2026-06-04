@@ -951,7 +951,6 @@
             }
 
             50% {
-                opacity: 1;
                 transform: scale(1.8);
             }
         }
@@ -1214,6 +1213,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Configuração dinâmica da URL da API (Local vs Render)
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE_URL = isLocalhost ? 'http://127.0.0.1:5000' : 'https://skylert-api.onrender.com'; // <-- Substitua pela sua URL do Render
+
         const userEmailSpan = document.getElementById('user-email');
         const btnSair = document.getElementById('btn-sair');
         let usuarioLogadoUid = null;
@@ -1309,7 +1312,7 @@
             try {
 
                 const response = await fetch(
-                    `http://127.0.0.1:5000/api/cidades?q=${encodeURIComponent(termo)}`
+                    `${API_BASE_URL}/api/cidades?q=${encodeURIComponent(termo)}`
                 );
 
                 const cidades = await response.json();
@@ -1381,9 +1384,8 @@
             }
 
             try {
-                // Caso queira usar a variável dinâmica de URL que fizemos, substitua o IP por ${API_BASE_URL}
                 const response = await fetch(
-                    `http://127.0.0.1:5000/api/cidades?q=${encodeURIComponent(termo)}`
+                    `${API_BASE_URL}/api/cidades?q=${encodeURIComponent(termo)}`
                 );
 
                 const cidades = await response.json();
@@ -1453,7 +1455,7 @@
             tempEl.classList.add('loading');
 
             try {
-                let url = `http://127.0.0.1:5000/api/previsao?cidade=${encodeURIComponent(cidade)}&t=${Date.now()}`;
+                let url = `${API_BASE_URL}/api/previsao?cidade=${encodeURIComponent(cidade)}&t=${Date.now()}`;
 
                 if (lat && lon) {
                     url += `&lat=${lat}&lon=${lon}`;
