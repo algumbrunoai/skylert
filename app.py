@@ -11,7 +11,7 @@ ORIGENS_PERMITIDAS = [
     "http://localhost:5500",
     "http://127.0.0.1:5000",
     "http://localhost:5000",
-    "https://skylert.vercel.app"     # Quando for publicar, coloque seu domínio real aqui
+    "https://skylert.vercel.app"  # Domínio oficial da Vercel
 ]
 
 # Libera CORS para o frontend
@@ -70,8 +70,11 @@ def obter_previsao():
 
             geo_url = "https://geocoding-api.open-meteo.com/v1/search"
 
+            # Limpa o nome removendo o hífen e o estado se o termo completo for enviado
+            cidade_busca = cidade.split(" - ")[0].strip() if " - " in cidade else cidade
+
             geo_params = {
-                "name": cidade,
+                "name": cidade_busca,
                 "count": 1,
                 "language": "pt",
                 "format": "json",
@@ -106,15 +109,15 @@ def obter_previsao():
                 "temperature_2m",
                 "relative_humidity_2m",
                 "apparent_temperature",
-                "precipitation_probability",
                 "precipitation",
                 "weather_code",
                 "wind_speed_10m",
                 "is_day",
             ],
+            "hourly": ["precipitation_probability"], # Busca probabilidade de chuva de forma correta no hourly
             "daily": ["temperature_2m_max", "temperature_2m_min"],
             "timezone": "auto",
-            "forecast_days": 16,
+            "forecast_days": 4,
         }
 
         weather_response = requests.get(weather_url, params=weather_params, timeout=10)
@@ -128,6 +131,12 @@ def obter_previsao():
         current = dados["current"]
 
         codigo_clima = current.get("weather_code", 0)
+
+        # Extrai a chance de chuva da hora atual do bloco hourly
+        hourly = dados.get("hourly", {})
+        probabilidade_chuva = 0
+        if "precipitation_probability" in hourly and len(hourly["precipitation_probability"]) > 0:
+            probabilidade_chuva = hourly["precipitation_probability"][0]
 
         # ==========================================
         # PREVISÃO DOS PRÓXIMOS 3 DIAS
@@ -176,7 +185,7 @@ def obter_previsao():
             "vento": round(current.get("wind_speed_10m", 0), 1),
             "umidade": current.get("relative_humidity_2m", 0),
             "uv": 0,
-            "chuva": current.get("precipitation_probability", 0),
+            "chuva": probabilidade_chuva,
             "previsao_dias": previsao_diaria,
         }
 
