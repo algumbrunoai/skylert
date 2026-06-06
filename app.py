@@ -114,7 +114,7 @@ def obter_previsao():
             ],
             "daily": ["temperature_2m_max", "temperature_2m_min"],
             "timezone": "auto",
-            "forecast_days": 4,
+            "forecast_days": 16,
         }
 
         weather_response = requests.get(weather_url, params=weather_params, timeout=10)
