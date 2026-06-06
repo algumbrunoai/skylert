@@ -124,6 +124,11 @@ def obter_previsao():
 
         dados = weather_response.json()
 
+        # SE O OPEN-METEO BLOQUEAR O IP DO RENDER, ELE AVISA AO INVÉS DE QUEBRAR
+        if "error" in dados:
+            motivo = dados.get("reason", "Bloqueio desconhecido")
+            return jsonify({"erro": f"Bloqueio da API de Clima: {motivo}"}), 503
+
         # ==========================================
         # DADOS ATUAIS
         # ==========================================
