@@ -7,11 +7,11 @@ app = Flask(__name__)
 
 # Libera CORS APENAS para os seus ambientes seguros
 ORIGENS_PERMITIDAS = [
-    "http://127.0.0.1:5500",  # Típico do Live Server do VSCode
+    "http://127.0.0.1:5500",  
     "http://localhost:5500",
     "http://127.0.0.1:5000",
     "http://localhost:5000",
-    "https://skylert.vercel.app"  # Domínio oficial da Vercel
+    "https://skylert.vercel.app"  # Seu domínio oficial da Vercel
 ]
 
 # Libera CORS para o frontend
@@ -22,55 +22,31 @@ CORS(app, resources={r"/api/*": {"origins": ORIGENS_PERMITIDAS}})
 # =========================================================
 
 TRADUCAO_CLIMA = {
-    0: "Céu Limpo",
-    1: "Principalmente Limpo",
-    2: "Parcialmente Nublado",
-    3: "Nublado",
-    45: "Névoa",
-    48: "Neblina",
-    51: "Chuvisco Leve",
-    53: "Chuvisco",
-    55: "Chuvisco Forte",
-    61: "Chuva Leve",
-    63: "Chuva",
-    65: "Chuva Forte",
-    80: "Pancadas de Chuva",
-    95: "Tempestade",
+    0: "Céu Limpo", 1: "Principalmente Limpo", 2: "Parcialmente Nublado", 3: "Nublado",
+    45: "Névoa", 48: "Neblina", 51: "Chuvisco Leve", 53: "Chuvisco", 55: "Chuvisco Forte",
+    61: "Chuva Leve", 63: "Chuva", 65: "Chuva Forte", 80: "Pancadas de Chuva", 95: "Tempestade"
 }
-
 
 # =========================================================
 # API DE PREVISÃO
 # =========================================================
 
-
 @app.route("/api/previsao", methods=["GET"])
 def obter_previsao():
-
     cidade = request.args.get("cidade", "Sao Paulo")
-
-    # Coordenadas opcionais
     latitude_param = request.args.get("lat")
     longitude_param = request.args.get("lon")
 
     try:
-
         # ==========================================
         # BUSCA COORDENADAS
         # ==========================================
-
         if latitude_param and longitude_param:
-
             latitude = float(latitude_param)
             longitude = float(longitude_param)
-
             nome_cidade = cidade
-
         else:
-
             geo_url = "https://geocoding-api.open-meteo.com/v1/search"
-
-            # Limpa o nome removendo o hífen e o estado se o termo completo for enviado
             cidade_busca = cidade.split(" - ")[0].strip() if " - " in cidade else cidade
 
             geo_params = {
@@ -79,105 +55,79 @@ def obter_previsao():
                 "language": "pt",
                 "format": "json",
             }
-
             geo_response = requests.get(geo_url, params=geo_params, timeout=10)
-
             geo_data = geo_response.json()
 
             if "results" not in geo_data:
-                return jsonify({"erro": "Cidade não encontrada"}), 404
+                return jsonify({"erro_geocoding": "Cidade não encontrada"}), 404
 
             resultado = geo_data["results"][0]
-
             latitude = resultado["latitude"]
             longitude = resultado["longitude"]
-
             estado = resultado.get("admin1", "")
-
             nome_cidade = f"{resultado['name']} - {estado}"
 
         # ==========================================
         # BUSCA PREVISÃO DO TEMPO
         # ==========================================
-
         weather_url = "https://api.open-meteo.com/v1/forecast"
 
+        # FORMATO CORRETO DE STRING SEPARADA POR VÍRGULA!
         weather_params = {
             "latitude": latitude,
             "longitude": longitude,
-            "current": [
-                "temperature_2m",
-                "relative_humidity_2m",
-                "apparent_temperature",
-                "precipitation",
-                "weather_code",
-                "wind_speed_10m",
-                "is_day",
-            ],
-            "hourly": ["precipitation_probability"], # Busca probabilidade de chuva de forma correta no hourly
-            "daily": ["temperature_2m_max", "temperature_2m_min"],
+            "current": "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,is_day",
+            "hourly": "precipitation_probability",
+            "daily": "temperature_2m_max,temperature_2m_min",
             "timezone": "auto",
             "forecast_days": 4,
         }
 
         weather_response = requests.get(weather_url, params=weather_params, timeout=10)
-
         dados = weather_response.json()
 
-        # SE O OPEN-METEO BLOQUEAR O IP DO RENDER, ELE AVISA AO INVÉS DE QUEBRAR
+        # ==========================================
+        # TRAVAS DE SEGURANÇA (PARA DEBUG NO RENDER)
+        # ==========================================
         if "error" in dados:
-            motivo = dados.get("reason", "Bloqueio desconhecido")
-            return jsonify({"erro": f"Bloqueio da API de Clima: {motivo}"}), 503
+            motivo = dados.get("reason", "Desconhecido")
+            return jsonify({"erro_api_meteo": motivo}), 503
+
+        if "current" not in dados:
+            return jsonify({"erro_bizarro_render": "O Open-Meteo não enviou o current", "retorno_da_api": dados}), 500
 
         # ==========================================
         # DADOS ATUAIS
         # ==========================================
-
         current = dados["current"]
-
         codigo_clima = current.get("weather_code", 0)
 
-        # Extrai a chance de chuva da hora atual do bloco hourly
         hourly = dados.get("hourly", {})
-        probabilidade_chuva = 0
-        if "precipitation_probability" in hourly and len(hourly["precipitation_probability"]) > 0:
-            probabilidade_chuva = hourly["precipitation_probability"][0]
+        probabilidade_chuva = hourly.get("precipitation_probability", [0])[0] if "precipitation_probability" in hourly else 0
 
         # ==========================================
-        # PREVISÃO DOS PRÓXIMOS 3 DIAS
+        # PREVISÃO DIÁRIA
         # ==========================================
-
         previsao_diaria = []
-
-        datas = dados["daily"]["time"]
-        maximas = dados["daily"]["temperature_2m_max"]
-        minimas = dados["daily"]["temperature_2m_min"]
+        datas = dados.get("daily", {}).get("time", [])
+        maximas = dados.get("daily", {}).get("temperature_2m_max", [])
+        minimas = dados.get("daily", {}).get("temperature_2m_min", [])
 
         hoje = datetime.now().date()
 
         for i in range(len(datas)):
-
             data_obj = datetime.strptime(datas[i], "%Y-%m-%d").date()
-
-            # Ignora o dia atual
             if data_obj <= hoje:
                 continue
 
-            previsao_diaria.append(
-                {
-                    "data": data_obj.strftime("%d/%m/%Y"),
-                    "max": round(maximas[i]),
-                    "min": round(minimas[i]),
-                }
-            )
+            previsao_diaria.append({
+                "data": data_obj.strftime("%d/%m/%Y"),
+                "max": round(maximas[i]),
+                "min": round(minimas[i]),
+            })
 
-            # Limita a 3 dias
             if len(previsao_diaria) == 3:
                 break
-
-        # ==========================================
-        # RESPOSTA FINAL
-        # ==========================================
 
         resposta = {
             "cidade_nome": nome_cidade,
@@ -197,64 +147,33 @@ def obter_previsao():
         return jsonify(resposta), 200
 
     except Exception as e:
-
-        print(e)
-
-        return jsonify({"erro": str(e)}), 500
-
-
-# =========================================================
-# API DE AUTOCOMPLETE DE CIDADES
-# =========================================================
-
+        return jsonify({"erro_fatal_python": str(e)}), 500
 
 @app.route("/api/cidades", methods=["GET"])
 def buscar_cidades():
-
     termo = request.args.get("q", "")
-
     if len(termo) < 2:
         return jsonify([])
 
     try:
-
         url = "https://geocoding-api.open-meteo.com/v1/search"
-
         params = {"name": termo, "count": 5, "language": "pt", "format": "json"}
-
         response = requests.get(url, params=params, timeout=10)
-
         dados = response.json()
 
         cidades = []
-
         if "results" in dados:
-
             for cidade in dados["results"]:
-
                 nome = cidade.get("name", "")
                 estado = cidade.get("admin1", "")
-
-                cidades.append(
-                    {
-                        "nome": f"{nome} - {estado}",
-                        "latitude": cidade.get("latitude"),
-                        "longitude": cidade.get("longitude"),
-                    }
-                )
-
+                cidades.append({
+                    "nome": f"{nome} - {estado}",
+                    "latitude": cidade.get("latitude"),
+                    "longitude": cidade.get("longitude"),
+                })
         return jsonify(cidades)
-
     except Exception as e:
-
-        print(e)
-
-        return jsonify({"erro": str(e)}), 500
-
-
-# =========================================================
-# INICIAR SERVIDOR
-# =========================================================
+        return jsonify({"erro_fatal_cidades": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
